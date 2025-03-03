@@ -22,7 +22,7 @@ KrooM.Updator(Update)
 
 
 btn0 = KrooM.CreateButton("Krooz",30,500,100,30)
-KrooM.setCallback(btn0,Print)
+KrooM.setCallback(btn0,lambda: print("hello"))
 
 btn1 = KrooM.CreateButton("Cool",30,450,130,30)
 KrooM.setCallback(btn1,Log)
