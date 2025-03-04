@@ -29,6 +29,7 @@ module = Extension(
         r"vendor\glew\lib\Release\x64",
         r"vendor\python\libs"
     ],
+    extra_compile_args=["/std:c++20"],
 )
 
 setup(

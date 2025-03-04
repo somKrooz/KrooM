@@ -7,10 +7,12 @@
 #include "Button.hh"
 #include "Slider.hh"
 #include "Text.hh"
+#include "Input.hh"
 
 GLFWwindow* window;
 Application App;
 std::vector<PyObject*> GlobalUpdate;
+
 
 void UpdateTrigger(std::vector<PyObject*> Updator){
   for(auto &up : Updator){
@@ -19,6 +21,7 @@ void UpdateTrigger(std::vector<PyObject*> Updator){
     Py_XDECREF(result);
   }
 }
+
 
 // Init
 static PyObject* Krooz_Init(PyObject* self, PyObject* args) {
@@ -52,7 +55,7 @@ static PyObject* Krooz_Init(PyObject* self, PyObject* args) {
         return nullptr;
     }
 
-    glfwSetWindowAttrib(window, GLFW_RESIZABLE,true);
+    glfwSetWindowAttrib(window, GLFW_RESIZABLE,false);
     glViewport(0, 0, 940, 640);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -80,8 +83,8 @@ static PyObject* Krooz_Window(PyObject* self, PyObject* args) {
 
       App.UpdateComponents(DeltaTime, window, mx, my);
       App.RenderComponents();
-      UpdateTrigger(GlobalUpdate);
 
+      UpdateTrigger(GlobalUpdate);
       glfwSwapBuffers(window);
       glfwPollEvents();
   }
@@ -101,6 +104,37 @@ static PyObject* Krooz_Update(PyObject* self, PyObject* args){
 
 
   Py_RETURN_NONE;
+}
+
+
+static PyObject* Krooz_Input(PyObject* self, PyObject* args) {
+  float x, y, width, height;
+  if (!PyArg_ParseTuple(args, "ffff", &x, &y, &width, &height))
+      return nullptr;
+  extern GLFWwindow* window;
+
+  if (!window) {
+      PyErr_SetString(PyExc_RuntimeError, "GLFW window is not initialized");
+      return nullptr;
+  }
+
+  std::unique_ptr<KroozInput> Input = std::make_unique<KroozInput>(window, x, y, width, height);
+  PyObject* KroozInputCapsule = PyCapsule_New(Input.get(), "KroozInput", nullptr);
+  if(!KroozInputCapsule) return nullptr;
+  App.addComponents(std::move(Input));
+
+  return KroozInputCapsule;
+}
+
+static PyObject* Krooz_InputValue(PyObject* self, PyObject* args) {
+  PyObject* InputObj;
+  if(!PyArg_ParseTuple(args ,"O", &InputObj )) return nullptr;
+  KroozInput* input = reinterpret_cast<KroozInput*>(PyCapsule_GetPointer(InputObj, "KroozInput"));
+  if(!input) return nullptr;
+
+  std::string Val = input->getText();
+  return PyUnicode_FromString(Val.c_str());
+
 }
 
 static PyObject* Krooz_Text(PyObject* self, PyObject* args){
@@ -211,6 +245,8 @@ static PyMethodDef KroozMethod[] = {
     {"Updator" ,  Krooz_Update , METH_VARARGS , "Update Values"},
 
     {"CreateText" ,Krooz_Text , METH_VARARGS , "Create texts"},
+    {"CreateInput" , Krooz_Input ,METH_VARARGS , "Create Input" },
+    {"GetTex" , Krooz_InputValue , METH_VARARGS , "Get The Text"},
     {NULL, NULL, 0, NULL}
 };
 
